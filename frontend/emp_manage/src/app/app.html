@@ -1,0 +1,8 @@
+<header class="app-header" *ngIf="authService.currentUser() as user">
+  <div class="user-info">
+    <span class="greeting">Welcome, <strong>{{ user.username }}</strong></span>
+    <span class="role-badge">{{ user.role }}</span>
+  </div>
+  <button class="logout-btn" (click)="authService.logout()">Logout</button>
+</header>
+<router-outlet></router-outlet>
