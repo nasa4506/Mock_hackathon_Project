@@ -32,15 +32,20 @@ export class LoginComponent {
       }
 
       errorMessage = '';
+      isLoading = false;
 
-      onSubmit() {
+      async onSubmit() {
             if (this.loginForm.valid) {
+                  this.isLoading = true;
+                  this.errorMessage = '';
                   const { username, password } = this.loginForm.value;
-                  const success = this.authService.login(username!, password!, this.selectedRole);
+
+                  // login() now calls the backend API and returns a Promise<boolean>
+                  const success = await this.authService.login(username!, password!, this.selectedRole);
+
+                  this.isLoading = false;
                   if (!success) {
-                        this.errorMessage = 'Invalid username or password for the selected role.';
-                  } else {
-                        this.errorMessage = '';
+                        this.errorMessage = 'Invalid username or password.';
                   }
             } else {
                   this.errorMessage = 'Please fill out all fields.';

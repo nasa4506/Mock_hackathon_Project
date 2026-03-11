@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LeaveService } from '../../core/services/leave.service';
 
@@ -6,7 +6,7 @@ import { LeaveService } from '../../core/services/leave.service';
   selector: 'app-pending-leaves',
   standalone: true,
   imports: [CommonModule],
-  styleUrl: './hr-shared.css', // trigger rebuild
+  styleUrl: './hr-shared.css',
   template: `
     <div class="card">
       <div class="card-header">
@@ -34,8 +34,13 @@ import { LeaveService } from '../../core/services/leave.service';
     </div>
   `
 })
-export class PendingLeavesComponent {
+export class PendingLeavesComponent implements OnInit {
   leaveService = inject(LeaveService);
+
+  // Load all leave requests from the backend when the component initializes
+  ngOnInit() {
+    this.leaveService.loadAllLeaves();
+  }
 
   update(id: number, status: 'Approved' | 'Rejected') {
     this.leaveService.updateLeaveStatus(id, status);

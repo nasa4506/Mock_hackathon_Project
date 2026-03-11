@@ -1,15 +1,15 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { LeaveService } from '../../core/services/leave.service';
 import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
-      selector: 'app-leave-request',
-      standalone: true,
-      imports: [CommonModule, ReactiveFormsModule],
-      styleUrl: './emp-shared.css',
-      template: `
+  selector: 'app-leave-request',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  styleUrl: './emp-shared.css',
+  template: `
     <div class="card">
       <div class="card-header">
         <h4>Submit Leave Request</h4>
@@ -40,7 +40,7 @@ import { AuthService } from '../../core/auth/auth.service';
         <h4>My Leaves</h4>
       </div>
       <div class="list-group">
-        <div class="list-item" *ngFor="let req of myLeaves">
+        <div class="list-item" *ngFor="let req of leaveService.leaves()">
           <div class="item-details">
             <span class="item-title">{{ req.startDate }} to {{ req.endDate }}</span>
             <span class="item-desc">Reason: {{ req.reason }}</span>
@@ -52,41 +52,43 @@ import { AuthService } from '../../core/auth/auth.service';
             </span>
           </div>
         </div>
-        <div class="list-item" *ngIf="myLeaves.length === 0">
+        <div class="list-item" *ngIf="leaveService.leaves().length === 0">
           <span class="text-muted">No leave requests found.</span>
         </div>
       </div>
     </div>
   `
 })
-export class LeaveRequestComponent {
-      private fb = inject(FormBuilder);
-      private leaveService = inject(LeaveService);
-      private auth = inject(AuthService);
+export class LeaveRequestComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  leaveService = inject(LeaveService);
+  private auth = inject(AuthService);
 
-      get myLeaves() {
-            const empId = this.auth.currentUser()?.employeeId;
-            return this.leaveService.leaves().filter(l => l.employeeId === empId);
-      }
+  // Load the employee's leaves from the backend on init
+  ngOnInit() {
+    const empId = this.auth.currentUser()?.employeeId;
+    if (empId) {
+      this.leaveService.loadMyLeaves(empId);
+    }
+  }
 
-      leaveForm = this.fb.group({
-            startDate: ['', Validators.required],
-            endDate: ['', Validators.required],
-            reason: ['', Validators.required]
+  leaveForm = this.fb.group({
+    startDate: ['', Validators.required],
+    endDate: ['', Validators.required],
+    reason: ['', Validators.required]
+  });
+
+  submit() {
+    if (this.leaveForm.valid) {
+      const formVal = this.leaveForm.value;
+      const user = this.auth.currentUser();
+      this.leaveService.submitLeave({
+        employeeId: user?.employeeId || 0,
+        startDate: formVal.startDate!,
+        endDate: formVal.endDate!,
+        reason: formVal.reason!
       });
-
-      submit() {
-            if (this.leaveForm.valid) {
-                  const formVal = this.leaveForm.value;
-                  const user = this.auth.currentUser();
-                  this.leaveService.submitLeave({
-                        employeeId: user?.employeeId || 0,
-                        employeeName: user?.username,
-                        startDate: formVal.startDate!,
-                        endDate: formVal.endDate!,
-                        reason: formVal.reason!
-                  });
-                  this.leaveForm.reset();
-            }
-      }
+      this.leaveForm.reset();
+    }
+  }
 }

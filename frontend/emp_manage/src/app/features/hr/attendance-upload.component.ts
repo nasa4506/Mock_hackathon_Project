@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AttendanceService } from '../../core/services/attendance.service';
 
@@ -6,11 +6,11 @@ import { AttendanceService } from '../../core/services/attendance.service';
   selector: 'app-attendance-upload',
   standalone: true,
   imports: [CommonModule],
-  styleUrl: './hr-shared.css', // trigger rebuild
+  styleUrl: './hr-shared.css',
   template: `
     <div class="card">
       <div class="card-header">
-        <h4>Upload Attendance Data (Mock)</h4>
+        <h4>Upload Attendance Data</h4>
         <button class="btn btn-primary btn-sm" (click)="uploadMock()">Upload 1 Day Attendance for Employee 101</button>
       </div>
       <div class="list-group">
@@ -30,12 +30,17 @@ import { AttendanceService } from '../../core/services/attendance.service';
     </div>
   `
 })
-export class AttendanceUploadComponent {
+export class AttendanceUploadComponent implements OnInit {
   attendanceService = inject(AttendanceService);
+
+  // Load existing attendance records for employee 101 on init
+  ngOnInit() {
+    this.attendanceService.loadAttendance(101);
+  }
 
   uploadMock() {
     this.attendanceService.uploadAttendance([
-      { attendanceId: Date.now(), employeeId: 101, date: new Date().toISOString().split('T')[0], status: 'Present' }
+      { employeeId: 101, date: new Date().toISOString().split('T')[0], status: 'Present' }
     ]);
   }
 }

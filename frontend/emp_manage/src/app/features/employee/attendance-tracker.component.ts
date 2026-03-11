@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AttendanceService } from '../../core/services/attendance.service';
 import { AuthService } from '../../core/auth/auth.service';
@@ -14,7 +14,7 @@ import { AuthService } from '../../core/auth/auth.service';
         <h4>My Attendance</h4>
       </div>
       <div class="list-group">
-        <div class="list-item" *ngFor="let rec of myAttendance">
+        <div class="list-item" *ngFor="let rec of attendanceService.attendanceRecords()">
           <div class="item-details">
             <span class="item-title">Date: {{ rec.date }}</span>
           </div>
@@ -25,18 +25,22 @@ import { AuthService } from '../../core/auth/auth.service';
             </span>
           </div>
         </div>
-        <div class="list-item" *ngIf="myAttendance.length === 0">
+        <div class="list-item" *ngIf="attendanceService.attendanceRecords().length === 0">
           <span class="text-muted">No attendance records found.</span>
         </div>
       </div>
     </div>
   `
 })
-export class AttendanceTrackerComponent {
-  private attendanceService = inject(AttendanceService);
+export class AttendanceTrackerComponent implements OnInit {
+  attendanceService = inject(AttendanceService);
   private auth = inject(AuthService);
 
-  get myAttendance() {
-    return this.attendanceService.getEmployeeAttendance(this.auth.currentUser()?.employeeId || 0);
+  // Load attendance records from the backend on init
+  ngOnInit() {
+    const empId = this.auth.currentUser()?.employeeId;
+    if (empId) {
+      this.attendanceService.loadAttendance(empId);
+    }
   }
 }

@@ -1,21 +1,59 @@
 import { Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { LeaveRequest } from '../models';
 
 @Injectable({
       providedIn: 'root'
 })
 export class LeaveService {
-      leaves = signal<LeaveRequest[]>([
-            { leaveRequestId: 1, employeeId: 101, employeeName: 'John Doe', startDate: '2026-03-01', endDate: '2026-03-03', reason: 'Vacation', status: 'Pending' }
-      ]);
+      private apiUrl = 'http://localhost:5255/api/leaves';
 
-      submitLeave(req: Omit<LeaveRequest, 'leaveRequestId' | 'status'>) {
-            const list = this.leaves();
-            const newId = list.length > 0 ? Math.max(...list.map(l => l.leaveRequestId)) + 1 : 1;
-            this.leaves.update(val => [...val, { ...req, leaveRequestId: newId, status: 'Pending' }]);
+      // Signal holds the leave list — components bind to this reactively
+      leaves = signal<LeaveRequest[]>([]);
+
+      constructor(private http: HttpClient) { }
+
+      /**
+       * Loads ALL leave requests (HR view).
+       * Called by PendingLeavesComponent.ngOnInit().
+       */
+      loadAllLeaves() {
+            this.http.get<LeaveRequest[]>(this.apiUrl).subscribe({
+                  next: (data) => this.leaves.set(data),
+                  error: (err) => console.error('Failed to load leaves:', err)
+            });
       }
 
+      /**
+       * Loads leaves for a specific employee (Employee view).
+       * Called by LeaveRequestComponent.ngOnInit().
+       */
+      loadMyLeaves(empId: number) {
+            this.http.get<LeaveRequest[]>(`${this.apiUrl}/employee/${empId}`).subscribe({
+                  next: (data) => this.leaves.set(data),
+                  error: (err) => console.error('Failed to load my leaves:', err)
+            });
+      }
+
+      /**
+       * Submits a new leave request via POST.
+       * After success, reloads the employee's leaves to show the new entry.
+       */
+      submitLeave(req: { employeeId: number; startDate: string; endDate: string; reason: string }) {
+            this.http.post(this.apiUrl, req).subscribe({
+                  next: () => this.loadMyLeaves(req.employeeId), // Refresh list
+                  error: (err) => console.error('Failed to submit leave:', err)
+            });
+      }
+
+      /**
+       * HR approves or rejects a leave request via PUT.
+       * After success, reloads the full list.
+       */
       updateLeaveStatus(leaveRequestId: number, status: 'Approved' | 'Rejected') {
-            this.leaves.update(list => list.map(l => l.leaveRequestId === leaveRequestId ? { ...l, status } : l));
+            this.http.put(`${this.apiUrl}/${leaveRequestId}/status`, { status }).subscribe({
+                  next: () => this.loadAllLeaves(), // Refresh HR view
+                  error: (err) => console.error('Failed to update leave status:', err)
+            });
       }
 }
